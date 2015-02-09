@@ -16,6 +16,11 @@ namespace :geocombine do
       end
     end
   end
+  desc 'Delete the tmp directory'
+  task :clean do
+    puts "Removing 'tmp' directory."
+    FileUtils.rm_rf('tmp') 
+  end
   desc '"git pull" OpenGeoMetadata repositories'
   task :pull do
     Dir.glob('tmp/*').map{ |dir| system "cd #{dir} && git pull origin master" if dir =~ /.*edu.*./ }
