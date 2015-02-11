@@ -3,6 +3,7 @@ require 'net/http'
 require 'json'
 require 'rsolr'
 require 'fileutils'
+require 'colorize'
 
 namespace :geocombine do
   desc 'Clone all OpenGeoMetadata repositories'
@@ -16,38 +17,60 @@ namespace :geocombine do
       end
     end
   end
+
   desc 'Delete the tmp directory'
   task :clean do
     puts "Removing 'tmp' directory."
     FileUtils.rm_rf('tmp') 
   end
+
+  desc "Delete the Solr index"
+  task :delete , [:solr_url] do |t, args|
+    begin
+      args.with_defaults(solr_url: 'http://127.0.0.1:8983/solr')
+      solr = RSolr.connect :url => args[:solr_url]
+      puts "Deleting the Solr index."
+      solr.delete_by_query '*:*'
+      solr.optimize
+    rescue Exception => e
+      puts "\nError: #{e}".blue
+    end
+  end
+
   desc '"git pull" OpenGeoMetadata repositories'
   task :pull do
     Dir.glob('tmp/*').map{ |dir| system "cd #{dir} && git pull origin master" if dir =~ /.*edu.*./ }
   end
+
   desc 'Index all of the GeoBlacklight documents'
   # look in geoblacklight env for solr url (maybe in solr_config.yml) Env.fetch
   task :index, [:solr_url] do |t, args|
     begin
       args.with_defaults(solr_url: 'http://127.0.0.1:8983/solr')
-      solr = RSolr.connect :url => args[:solr_url]
+      solr = RSolr.connect :url => args[:solr_url], :read_timeout => 720
+      puts "Finding geoblacklight.xml files.".green
       xml_files = Dir.glob("tmp/**/*geoblacklight.xml")
+      puts "Loading files into solr.".green
       xml_files.each_with_index do |file, i|
+        @the_file = file
         doc = File.read(file)
         begin
           solr.update data: doc
+          solr.commit
         rescue RSolr::Error::Http => error
-          puts error
+          puts "\n#{error}".red
         end
         # attach to rake's verbose flag? or log
+        if i % 100 == 0
+          print ".".magenta unless i == 0
+        end
         if i % 1000 == 0
-          solr.commit
-          puts "Commit to Solr (1000)."
-          solr.optimize
+          puts " #{i} files indexed.".light_green unless i == 0
         end
       end
     rescue Exception => e
-      puts "Error: #{e}"
+      puts "\n#{@the_file}\nError: #{e}".yellow
     end
+    solr.optimize
   end
 end
