@@ -26,18 +26,28 @@ namespace :geocombine do
     Dir.glob('tmp/*').map{ |dir| system "cd #{dir} && git pull origin master" if dir =~ /.*edu.*./ }
   end
   desc 'Index all of the GeoBlacklight documents'
-  task :index do
-    solr = RSolr.connect :url => 'http://192.168.59.103:49155/solr'
-    Find.find('tmp') do |path|
-      if path =~ /.*geoblacklight.xml$/
-        doc = File.read(path)
+  # look in geoblacklight env for solr url (maybe in solr_config.yml) Env.fetch
+  task :index, [:solr_url] do |t, args|
+    begin
+      args.with_defaults(solr_url: 'http://127.0.0.1:8983/solr')
+      solr = RSolr.connect :url => args[:solr_url]
+      xml_files = Dir.glob("tmp/**/*geoblacklight.xml")
+      xml_files.each_with_index do |file, i|
+        doc = File.read(file)
         begin
           solr.update data: doc
-          solr.commit
         rescue RSolr::Error::Http => error
           puts error
         end
+        # attach to rake's verbose flag? or log
+        if i % 1000 == 0
+          solr.commit
+          puts "Commit to Solr (1000)."
+          solr.optimize
+        end
       end
+    rescue Exception => e
+      puts "Error: #{e}"
     end
   end
 end
