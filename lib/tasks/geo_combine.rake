@@ -48,29 +48,33 @@ namespace :geocombine do
     begin
       args.with_defaults(solr_url: 'http://127.0.0.1:8983/solr')
       solr = RSolr.connect :url => args[:solr_url], :read_timeout => 720
-      puts "Finding geoblacklight.xml files.".green
+      puts "Finding geoblacklight.xml files."
       xml_files = Dir.glob("tmp/**/*geoblacklight.xml")
-      puts "Loading files into solr.".green
+      puts "Loading files into solr."
       xml_files.each_with_index do |file, i|
         @the_file = file
         doc = File.read(file)
         begin
           solr.update data: doc
-          solr.commit
         rescue RSolr::Error::Http => error
-          puts "\n#{error}".red
+          puts "\n#{file}\n#{error}".red
+          next
         end
-        # attach to rake's verbose flag? or log
+        # attach the following output to rake's verbose flag? or log
         if i % 100 == 0
           print ".".magenta unless i == 0
         end
         if i % 1000 == 0
-          puts " #{i} files indexed.".light_green unless i == 0
+          puts " #{i} files uploaded.".light_green unless i == 0
         end
       end
     rescue Exception => e
       puts "\n#{@the_file}\nError: #{e}".yellow
+      next
     end
+    puts "\nIndexing and optimizing Solr."
+    solr.commit
     solr.optimize
+    puts "\n"
   end
 end
