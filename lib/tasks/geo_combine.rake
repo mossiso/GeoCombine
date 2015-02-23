@@ -51,8 +51,10 @@ namespace :geocombine do
     begin
       args.with_defaults(solr_url: 'http://127.0.0.1:8983/solr')
       solr = RSolr.connect :url => args[:solr_url], :read_timeout => 720
+
       puts "Finding geoblacklight.xml files."
       xml_files = Dir.glob("tmp/**/*geoblacklight.xml")
+
       puts "Loading files into solr."
       xml_files.each_with_index do |file, i|
         @the_file = file
@@ -63,18 +65,20 @@ namespace :geocombine do
           puts "\n#{file}\n#{error}".red
           next
         end
-        # attach the following output to rake's verbose flag? or log
-        if i % 100 == 0
-          print ".".magenta unless i == 0
-        end
-        if i % 1000 == 0
-          puts " #{i} files uploaded.".light_green unless i == 0
+
+        if i % 100 == 0 && i > 0
+          print ".".magenta
+          if i % 1000 == 0
+            puts " #{i} files uploaded.".light_green
+          end
         end
       end
+
     rescue Exception => e
       puts "\n#{@the_file}\nError: #{e}".yellow
       next
     end
+
     puts "\nIndexing and optimizing Solr."
     solr.commit
     solr.optimize
