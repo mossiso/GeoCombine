@@ -4,6 +4,7 @@ require 'json'
 require 'rsolr'
 require 'fileutils'
 require 'colorize'
+require 'dotenv/tasks'
 
 namespace :geocombine do
   desc 'Clone and index all in one go'
@@ -28,9 +29,9 @@ namespace :geocombine do
   end
 
   desc "Delete the Solr index"
-  task :delete , [:solr_url] do |t, args|
+  task :delete , [:solr_url]  => :dotenv do |t, args|
     begin
-      args.with_defaults(solr_url: 'http://127.0.0.1:8983/solr')
+      args.with_defaults(solr_url: ENV.fetch('solr_url', 'http://127.0.0.1:8983/solr'))
       solr = RSolr.connect :url => args[:solr_url]
       puts "Deleting the Solr index."
       solr.delete_by_query '*:*'
@@ -46,10 +47,9 @@ namespace :geocombine do
   end
 
   desc 'Index all of the GeoBlacklight documents'
-  # look in geoblacklight env for solr url (maybe in solr_config.yml) Env.fetch
-  task :index, [:solr_url] do |t, args|
+  task :index, [:solr_url] => :dotenv do |t, args|
     begin
-      args.with_defaults(solr_url: 'http://127.0.0.1:8983/solr')
+      args.with_defaults(solr_url: ENV.fetch('solr_url', 'http://127.0.0.1:8983/solr'))
       solr = RSolr.connect :url => args[:solr_url], :read_timeout => 720
 
       puts "Finding geoblacklight.xml files."
