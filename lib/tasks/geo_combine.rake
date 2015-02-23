@@ -24,7 +24,7 @@ namespace :geocombine do
 
   desc 'Delete the tmp directory'
   task :clean do
-    puts "Removing 'tmp' directory."
+    puts "Removing 'tmp' directory." if verbose == true
     FileUtils.rm_rf('tmp') 
   end
 
@@ -33,11 +33,11 @@ namespace :geocombine do
     begin
       args.with_defaults(solr_url: ENV.fetch('solr_url', 'http://127.0.0.1:8983/solr'))
       solr = RSolr.connect :url => args[:solr_url]
-      puts "Deleting the Solr index."
+      puts "Deleting the Solr index." if verbose == true
       solr.delete_by_query '*:*'
       solr.optimize
     rescue Exception => e
-      puts "\nError: #{e}".blue
+      puts "\nError: #{e}".blue if verbose == true
     end
   end
 
@@ -52,36 +52,38 @@ namespace :geocombine do
       args.with_defaults(solr_url: ENV.fetch('solr_url', 'http://127.0.0.1:8983/solr'))
       solr = RSolr.connect :url => args[:solr_url], :read_timeout => 720
 
-      puts "Finding geoblacklight.xml files."
+      puts "Finding geoblacklight.xml files." if verbose == true
       xml_files = Dir.glob("tmp/**/*geoblacklight.xml")
 
-      puts "Loading files into solr."
+      puts "Loading files into solr." if verbose == true
       xml_files.each_with_index do |file, i|
         @the_file = file
         doc = File.read(file)
         begin
           solr.update data: doc
         rescue RSolr::Error::Http => error
-          puts "\n#{file}\n#{error}".red
+          puts "\n#{file}\n#{error}".red if verbose == true
           next
         end
 
-        if i % 100 == 0 && i > 0
-          print ".".magenta
-          if i % 1000 == 0
-            puts " #{i} files uploaded.".light_green
+        if verbose == true
+          if i % 100 == 0 && i > 0
+            print ".".magenta 
+            if i % 1000 == 0
+              puts " #{i} files uploaded.".light_green
+            end
           end
         end
       end
 
     rescue Exception => e
-      puts "\n#{@the_file}\nError: #{e}".yellow
+      puts "\n#{@the_file}\nError: #{e}".yellow if verbose == true
       next
     end
 
-    puts "\nIndexing and optimizing Solr."
+    puts "\nIndexing and optimizing Solr." if verbose == true
     solr.commit
     solr.optimize
-    puts "\n"
+    puts "\n" if verbose == true
   end
 end
