@@ -6,6 +6,9 @@ require 'fileutils'
 require 'colorize'
 
 namespace :geocombine do
+  desc 'Clone and index all in one go'
+  task :all, [:solr_url] => [:clone, :index]
+
   desc 'Clone all OpenGeoMetadata repositories'
   task :clone do
     FileUtils.mkdir_p('tmp')
