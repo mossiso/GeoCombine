@@ -67,7 +67,7 @@ namespace :geocombine do
 
         if verbose == true
           if i % 100 == 0 && i > 0
-            print ".".magenta 
+            print "." 
             if i % 1000 == 0
               puts " #{i} files uploaded."
             end
