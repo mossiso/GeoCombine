@@ -3,7 +3,6 @@ require 'net/http'
 require 'json'
 require 'rsolr'
 require 'fileutils'
-require 'colorize'
 require 'dotenv/tasks'
 
 namespace :geocombine do
@@ -37,7 +36,7 @@ namespace :geocombine do
       solr.delete_by_query '*:*'
       solr.optimize
     rescue Exception => e
-      puts "\nError: #{e}".blue if verbose == true
+      puts "\nError: #{e}" if verbose == true
     end
   end
 
@@ -62,7 +61,7 @@ namespace :geocombine do
         begin
           solr.update data: doc
         rescue RSolr::Error::Http => error
-          puts "\n#{file}\n#{error}".red if verbose == true
+          puts "\n#{file}\n#{error}" if verbose == true
           next
         end
 
@@ -70,14 +69,14 @@ namespace :geocombine do
           if i % 100 == 0 && i > 0
             print ".".magenta 
             if i % 1000 == 0
-              puts " #{i} files uploaded.".light_green
+              puts " #{i} files uploaded."
             end
           end
         end
       end
 
     rescue Exception => e
-      puts "\n#{@the_file}\nError: #{e}".yellow if verbose == true
+      puts "\n#{@the_file}\nError: #{e}" if verbose == true
       next
     end
 
